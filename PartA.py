@@ -9,8 +9,9 @@ import time
 def read_mnist():
     mnist_alternative_url = "https://github.com/amplab/datascience-sp14/blob/master/lab7/mldata/mnist-original.mat?raw=true"
     mnist_path = "./mnist-original.mat"
-    response = urllib.request.urlopen(mnist_alternative_url)
+
     if not os.path.exists(mnist_path):
+        response = urllib.request.urlopen(mnist_alternative_url)
         with open(mnist_path, "wb") as f:
             content = response.read()
             f.write(content)
@@ -26,10 +27,23 @@ def read_mnist():
     print("Success!")
     return mnist
 
-def multi_confusion_matrix(x_multi, data):
-    pass
 
-def check_loss(w, data, label):
+def print_multi_confusion_matrix(preds, targets):
+    # calculate the confusion matrix; labels is numpy array of classification labels
+    cm = np.zeros((10, 10))
+    for t, p in zip(targets, preds):
+        cm[int(t)][int(p)] += 1
+    # also get the accuracy
+    accuracy = (preds == targets).sum() / float(len(targets))
+    # fig2 = plt.figure()
+    fig2, ax2 = plt.subplots(1,1)
+    # ax2.axis(list(range(10)),list(range(10)))
+    ax2.set_title('Confusion Matrix, The accuracy is {}'.format(accuracy))
+    ax2.matshow(cm)
+    return accuracy
+
+
+def check_loss(w, data, label, need_table_confusion=False):
     def TP():
         return np.sum(predict * target)
     def FP():
@@ -46,7 +60,16 @@ def check_loss(w, data, label):
     tn = TN()
     acc = (tp+tn)/(tp+fp+fn+tn)
     loss = (fp+fn)/(len(data['target']))
+    if need_table_confusion:
+        global axs_tc
+        axs_tc[label // 5][label % 5].set_title('Label {} TP={}, FP={}, FN={}, TN={},\n TPR={}'
+                                                .format(label, tp, fp, fn, tn, (tp/(tp+fn))))
+        axs_tc[label // 5][label % 5].matshow([[tp,fp],[fn,tn]])
     return acc, loss
+
+
+def save_best_w(w, w_best):
+    pass
 
 
 def PLA_binary(train_data, tested_label, test_data, num_of_epochs=1):
@@ -61,6 +84,8 @@ def PLA_binary(train_data, tested_label, test_data, num_of_epochs=1):
     global axs
     # init
     w = np.zeros((785, ), dtype=np.float32)
+    w_best = np.copy(w)
+    best_loss = 1
     flag = True  # indicate that we not classify all good
     epoch = 0
     test_acc_list = list()
@@ -92,9 +117,29 @@ def PLA_binary(train_data, tested_label, test_data, num_of_epochs=1):
                 test_loss_list.append(test_loss)
                 train_loss_list.append(train_loss)
 
-                # TODO: add save for best acc/loss need to ask
                 x_tick.append(i + num_of_train_data*(epoch-1))
-                # print(i)
+
+                # pocket algo:
+                if best_loss > train_loss:
+                    w_best = np.copy(w)
+                    best_loss = train_loss
+
+    # for the last iteration:
+    x_tick.append(i + num_of_train_data * (epoch - 2))
+    test_acc, test_loss = check_loss(w, test_data, tested_label, need_table_confusion=True)
+    train_acc, train_loss = check_loss(w, train_data, tested_label)
+
+    test_acc_list.append(test_acc)
+    train_acc_list.append(train_acc)
+
+    test_loss_list.append(test_loss)
+    train_loss_list.append(train_loss)
+
+    # pocket algo:
+    if best_loss > train_loss:
+        w_best = np.copy(w)
+        best_loss = train_loss
+
     axs[tested_label][0].set_title('Accuracy for label {}'.format(tested_label))
     axs[tested_label][0].plot(x_tick, test_acc_list, label='Test accuracy')
     axs[tested_label][0].plot(x_tick, train_acc_list, label='Train accuracy')
@@ -104,7 +149,9 @@ def PLA_binary(train_data, tested_label, test_data, num_of_epochs=1):
     axs[tested_label][1].plot(x_tick, test_loss_list, label='Test loss')
     axs[tested_label][1].plot(x_tick, train_loss_list, label='Train loss')
     axs[tested_label][1].legend()
-    return w
+
+
+    return w_best
 
 
 def PLA_multi(train_data, test_data):
@@ -112,6 +159,10 @@ def PLA_multi(train_data, test_data):
     for label in range(0, 10):
         w_multi[:, label] = PLA_binary(train_data, label, test_data)
     return w_multi
+
+
+def predict(w_multi, input):
+    return np.argmax(np.matmul(w_multi.T, input.T), axis=0)
 
 
 def _main():
@@ -122,12 +173,16 @@ def _main():
     train_data['data'], test_data['data'], train_data['target'], test_data['target'] = \
         train_test_split(mnist['data'], mnist['target'], test_size=int(1e4), random_state=42)
     w_multi = PLA_multi(train_data, test_data)
-    print('Finish in {} sec'.format(int(time.time() - start_train_time)))
+    print('Train finished in {} sec'.format(int(time.time() - start_train_time)))
+    res = predict(w_multi, test_data['data'])
+    accuracy = print_multi_confusion_matrix(res, test_data['target'])
 
+    print('The accuracy for the multi_PLA is {}'.format(accuracy))
     pass
 
 
-fig, axs = plt.subplots(10, 2, sharex=True, constrained_layout=True)
+fig, axs = plt.subplots(10, 2)
+fig_tc, axs_tc = plt.subplots(2, 5, sharex=True)
 _main()
 plt.show()
 pass
