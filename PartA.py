@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import urllib
 import time
 
+
 def read_mnist():
     mnist_alternative_url = "https://github.com/amplab/datascience-sp14/blob/master/lab7/mldata/mnist-original.mat?raw=true"
     mnist_path = "./mnist-original.mat"
@@ -35,9 +36,7 @@ def print_multi_confusion_matrix(preds, targets):
         cm[int(t)][int(p)] += 1
     # also get the accuracy
     accuracy = (preds == targets).sum() / float(len(targets))
-    # fig2 = plt.figure()
     fig2, ax2 = plt.subplots(1,1)
-    # ax2.axis(list(range(10)),list(range(10)))
     ax2.set_title('Confusion Matrix, The accuracy is {}'.format(accuracy))
     ax2.matshow(cm)
     return accuracy
@@ -66,10 +65,6 @@ def check_loss(w, data, label, need_table_confusion=False):
                                                 .format(label, tp, fp, fn, tn, (tp/(tp+fn))))
         axs_tc[label // 5][label % 5].matshow([[tp,fp],[fn,tn]])
     return acc, loss
-
-
-def save_best_w(w, w_best):
-    pass
 
 
 def PLA_binary(train_data, tested_label, test_data, num_of_epochs=1):
