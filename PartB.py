@@ -1,9 +1,6 @@
-import os
 import numpy as np
-from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-import urllib
 import time
 from PartA import read_mnist, print_multi_confusion_matrix
 
@@ -22,7 +19,8 @@ def get_probs_preds(data, w):
 def check_accuracy(data, true, w):
     prob, pred = get_probs_preds(data, w)
     accuracy = print_multi_confusion_matrix(pred, np.argmax(true, axis=0))
-    print("The accuracy is {}".format(accuracy))
+    print("The accuracy for the Softmax regression is {}".format(accuracy))
+    print_confusion_tables(pred, np.argmax(true, axis=0))
     return accuracy
 
 
@@ -40,7 +38,22 @@ def softmax_regression(train_data, test_data, epochs=100, lr=1):
         losses.append(loss)
         w_multi = w_multi - (lr * div_loss)
     plt.plot(losses)
-    check_accuracy(test_data['data'].T, test_data['target'].T, w_multi)
+    return w_multi
+
+
+def print_confusion_tables(pred, true):
+    fig_tc, axs_tc = plt.subplots(2, 5, sharex=True)
+    for label in range(10):
+        target = (true == label)
+        predict = (pred == label)
+        tp = np.sum(predict * target)
+        fp = np.sum(predict * np.logical_not(target))
+        fn = np.sum(np.logical_not(predict) * target)
+        tn = np.sum(np.logical_not(predict) * np.logical_not(target))
+
+        axs_tc[label // 5][label % 5].set_title('Label {} TP={}, FP={}, FN={}, TN={},\n TPR={}'
+                                                .format(label, tp, fp, fn, tn, (tp/(tp+fn))))
+        axs_tc[label // 5][label % 5].matshow([[tp,fp],[fn,tn]])
 
 
 def to_one_hot(y):
@@ -59,8 +72,9 @@ def _main():
         train_test_split(mnist['data'], mnist['target'], test_size=int(1e4), random_state=42)
     train_data['target'] = to_one_hot(train_data['target'])
     test_data['target'] = to_one_hot(test_data['target'])
-    softmax_regression(train_data,test_data)
+    w_multi = softmax_regression(train_data,test_data)
     print('Train finished in {} sec'.format(int(time.time() - start_train_time)))
+    check_accuracy(test_data['data'].T, test_data['target'].T, w_multi)
     plt.show()
 
 
