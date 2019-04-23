@@ -9,3 +9,9 @@ Results are plot in graphs.
 
 Confusion Matrix:
 ![alt tag](confusion_matrix.png)
+
+
+## SoftMax regression
+In the following part I will apply Softmax Regression on the MNIST dataset.
+
+![alt_tag](confusion_matrix_softmax.png)
