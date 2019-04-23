@@ -19,7 +19,7 @@ def read_mnist():
     x_with_bais = np.ones((mnist_raw["data"].T.shape[0], mnist_raw["data"].T.shape[1]+1))
     x_with_bais[:,1:] = mnist_raw["data"].T
     mnist = {
-    "data": x_with_bais,
+    "data": x_with_bais/255,
     "target": mnist_raw["label"][0],
     "COL_NAMES": ["label", "data"],
     "DESCR": "mldata.org dataset: mnist-original",
@@ -181,8 +181,9 @@ def _main():
     pass
 
 
-fig, axs = plt.subplots(10, 2)
-fig_tc, axs_tc = plt.subplots(2, 5, sharex=True)
-_main()
-plt.show()
-pass
+if __name__ == '__main__':
+    fig, axs = plt.subplots(10, 2)
+    fig_tc, axs_tc = plt.subplots(2, 5, sharex=True)
+    _main()
+    plt.show()
+    pass
